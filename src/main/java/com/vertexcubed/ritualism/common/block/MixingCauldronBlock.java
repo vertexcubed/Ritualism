@@ -159,6 +159,10 @@ public class MixingCauldronBlock extends BaseEntityBlock {
                 }
             }
         }
+        else {
+            Ritualism.LOGGER.debug("Cannot fill item.");
+            return InteractionResult.CONSUME;
+        }
 
         tank.drain(new FluidStack(drained, filled), IFluidHandler.FluidAction.EXECUTE);
         Ritualism.LOGGER.debug("Successfully drained tank and filled item.");

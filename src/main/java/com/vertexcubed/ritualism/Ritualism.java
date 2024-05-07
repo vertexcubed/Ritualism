@@ -22,6 +22,8 @@ public class Ritualism
         modEventBus.addListener(BlockRegistry::registerBlockItems);
         TabRegistry.register(modEventBus);
 
+        modEventBus.register(this);
+        modEventBus.register(RitualismClient.class);
     }
 
 
