@@ -1,0 +1,14 @@
+{
+    "type": "ritualism:filling",
+    "input": {
+        "item": "minecraft:glass_bottle"
+    },
+    "fluid": {
+        "fluid": "minecraft:water",
+        "amount": 250
+    },
+    "result": {
+        "item": "minecraft:diamond",
+        "count": 1
+    }
+}

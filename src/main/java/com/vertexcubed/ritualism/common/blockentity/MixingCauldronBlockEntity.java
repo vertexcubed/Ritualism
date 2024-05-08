@@ -37,6 +37,10 @@ import java.util.stream.Collectors;
 
 public class MixingCauldronBlockEntity extends BlockEntity {
 
+
+    //this should only be used on the client.
+    private FluidStack fluidOld;
+
     private final ItemStackHandler itemHandler = new ItemStackHandler(6) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -73,6 +77,10 @@ public class MixingCauldronBlockEntity extends BlockEntity {
      */
     public FluidStack getFluid() {
         return fluidHandler.getFluidInTank(0).copy();
+    }
+
+    public FluidStack getFluidOld() {
+        return fluidOld;
     }
 
     public int getCapacity() {
@@ -178,6 +186,18 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        fluidOld = fluidHandler.getFluid().copy();
+        super.onDataPacket(net, pkt);
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        fluidOld = fluidHandler.getFluid().copy();
+        super.handleUpdateTag(tag);
     }
 
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity blockEntity) {
