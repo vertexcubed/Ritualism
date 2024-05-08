@@ -33,18 +33,15 @@ public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldro
 
     }
 
-    private static final float CORNER_FLUID = (float) MixingCauldronBlock.INSIDE.min(Direction.Axis.X) / 16.0f;
-    private static final float BOTTOM_FLUID = (float) MixingCauldronBlock.INSIDE.min(Direction.Axis.Y) / 16.0f;
-    private static final float TOP_FLUID = (float) MixingCauldronBlock.INSIDE.max(Direction.Axis.Y) - 1.0f / 16.0f;
+    private static final float CORNER_FLUID = (float) MixingCauldronBlock.INSIDE.min(Direction.Axis.X);
+    private static final float BOTTOM_FLUID = (float) MixingCauldronBlock.INSIDE.min(Direction.Axis.Y);
+    private static final float TOP_FLUID = (float) MixingCauldronBlock.INSIDE.max(Direction.Axis.Y) - (1.0f / 16.0f);
 
 
     @Override
     public void render(MixingCauldronBlockEntity be, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBuffer, int pPackedLight, int pPackedOverlay) {
         FluidStack fluidOld = be.getFluidOld();
         FluidStack fluid = be.getFluid();
-        if(fluidOld != null && fluid != null) {
-            Ritualism.LOGGER.debug("Fluid old amount: " + fluidOld.getAmount() + ", fluid new amount: " + fluid.getAmount());
-        }
         if(!fluid.isEmpty()) {
             float percent = (float) fluid.getAmount() / be.getCapacity();
             renderFluid(be, pPoseStack, pBuffer, fluid, percent, pPackedLight);
@@ -89,6 +86,7 @@ public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldro
     }
 
     private void renderFluidQuad(Matrix4f matrix, VertexConsumer con, TextureAtlasSprite sprite, float r, float g, float b, float alpha, float percent, int packedLight){
+
         float height = BOTTOM_FLUID + (TOP_FLUID - BOTTOM_FLUID) * percent;
         float minU = sprite.getU(CORNER_FLUID * 16);
         float maxU = sprite.getU((1 - CORNER_FLUID) * 16);

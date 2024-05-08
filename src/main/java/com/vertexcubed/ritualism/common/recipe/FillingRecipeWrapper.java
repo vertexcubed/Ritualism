@@ -1,10 +1,7 @@
 package com.vertexcubed.ritualism.common.recipe;
 
-import com.vertexcubed.ritualism.Ritualism;
-import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 

@@ -1,0 +1,15 @@
+{
+    "type": "ritualism:emptying",
+    "input": {
+        "item": "minecraft:diamond"
+    },
+    "result": {
+        "item": "minecraft:glass_bottle",
+        "count": 1
+    },
+    "fluid": {
+        "fluid": "minecraft:water",
+        "amount": 250
+    }
+
+}

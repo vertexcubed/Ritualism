@@ -2,6 +2,7 @@ package com.vertexcubed.ritualism.common.item;
 
 import com.mojang.datafixers.util.Pair;
 import com.vertexcubed.ritualism.Ritualism;
+import com.vertexcubed.ritualism.common.fluid.ItemEmptying;
 import com.vertexcubed.ritualism.common.fluid.ItemFilling;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -12,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.registries.ForgeRegistries;
 
 public class DebugItem extends Item {
     public DebugItem(Properties pProperties) {
@@ -24,9 +26,20 @@ public class DebugItem extends Item {
 
         ItemStack toFill = pPlayer.getItemInHand(InteractionHand.OFF_HAND);
         Ritualism.LOGGER.debug("Can fill? " + ItemFilling.canItemBeFilled(pLevel, toFill, new FluidStack(Fluids.WATER, 1000)) + ", is client: " + pLevel.isClientSide);
-        Pair<ItemStack, FluidStack> fillResult = ItemFilling.fillItem(pLevel, toFill, new FluidStack(Fluids.WATER, 1000), true);
+        Pair<ItemStack, FluidStack> fillResult = ItemFilling.fillItem(pLevel, toFill, new FluidStack(Fluids.WATER, 1000), false);
         pPlayer.getInventory().add(fillResult.getFirst());
-        Ritualism.LOGGER.debug("Leftover fluid: " + fillResult.getSecond().getAmount());
+        Ritualism.LOGGER.debug("Filled fluid: " + fillResult.getSecond().getAmount());
+
+//        ItemStack toEmpty = pPlayer.getItemInHand(InteractionHand.OFF_HAND);
+//        Ritualism.LOGGER.debug("Can empty? " + ItemEmptying.canItemBeEmptied(pLevel, toEmpty) + ", is client: " + pLevel.isClientSide);
+//        Pair<ItemStack, FluidStack> emptyResult = ItemEmptying.emptyItem(pLevel, toEmpty, false);
+//        pPlayer.getInventory().add(emptyResult.getFirst());
+//        Ritualism.LOGGER.debug("Emptied fluid: " + emptyResult.getSecond().getAmount() + " " + ForgeRegistries.FLUIDS.getKey(emptyResult.getSecond().getFluid()));
+
+
+
+
+
         return super.use(pLevel, pPlayer, pUsedHand);
     }
 }
