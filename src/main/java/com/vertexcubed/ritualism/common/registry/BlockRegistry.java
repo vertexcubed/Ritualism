@@ -29,7 +29,9 @@ public class BlockRegistry {
                             .pushReaction(PushReaction.BLOCK)
                             .sound(SoundType.METAL)
                             .requiresCorrectToolForDrops()
-                            .strength(3.5f)))
+                            .strength(3.5f)
+                            .noOcclusion()
+                    ))
             ;
 
 

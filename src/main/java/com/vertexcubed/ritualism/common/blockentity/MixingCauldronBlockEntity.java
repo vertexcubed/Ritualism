@@ -3,14 +3,19 @@ package com.vertexcubed.ritualism.common.blockentity;
 import com.vertexcubed.ritualism.Ritualism;
 import com.vertexcubed.ritualism.common.block.MixingCauldronBlock;
 import com.vertexcubed.ritualism.common.registry.BlockRegistry;
+import com.vertexcubed.ritualism.common.registry.TagRegistry;
 import com.vertexcubed.ritualism.common.util.ItemHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -19,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -38,9 +44,7 @@ import java.util.stream.Collectors;
 public class MixingCauldronBlockEntity extends BlockEntity {
 
 
-    //this should only be used on the client.
-    private FluidStack fluidOld;
-
+    private boolean isHeated;
     private final ItemStackHandler itemHandler = new ItemStackHandler(6) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -78,11 +82,6 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     public FluidStack getFluid() {
         return fluidHandler.getFluidInTank(0).copy();
     }
-
-    public FluidStack getFluidOld() {
-        return fluidOld;
-    }
-
     public int getCapacity() {
         return fluidHandler.getCapacity();
     }
@@ -116,6 +115,9 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         else {
             item.setItem(leftover);
         }
+        if(!level.isClientSide) {
+            level.playSound(null, this.worldPosition, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 0.2f, level.random.nextFloat() * 1.5f + 0.5f);
+        }
         return true;
     }
 
@@ -129,6 +131,17 @@ public class MixingCauldronBlockEntity extends BlockEntity {
 
     public void dropContents() {
         Containers.dropContents(this.level, this.worldPosition, ItemHelper.createContainerFromHandler(itemHandler));
+    }
+
+    private void updateIsHeated() {
+        Ritualism.LOGGER.debug("Updating isHeated");
+        BlockState below = level.getBlockState(worldPosition.below());
+        isHeated = below.is(TagRegistry.HEAT_SOURCES);
+        setChanged();
+    }
+
+    public boolean isHeated() {
+        return isHeated;
     }
 
     @Override
@@ -161,6 +174,7 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag) {
         tag.put("inventory", itemHandler.serializeNBT());
         tag.put("fluid", fluidHandler.writeToNBT(new CompoundTag()));
+        tag.putBoolean("isHeated", isHeated);
         super.saveAdditional(tag);
     }
 
@@ -169,6 +183,7 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         super.load(tag);
         itemHandler.deserializeNBT(tag.getCompound("inventory"));
         fluidHandler.readFromNBT(tag.getCompound("fluid"));
+        isHeated = tag.getBoolean("isHeated");
     }
 
     @Override
@@ -188,21 +203,20 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        fluidOld = fluidHandler.getFluid().copy();
-        super.onDataPacket(net, pkt);
-    }
-
-    @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        fluidOld = fluidHandler.getFluid().copy();
-        super.handleUpdateTag(tag);
-    }
-
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity blockEntity) {
-        if(!Block.isShapeFullBlock(level.getBlockState(blockPos.above()).getShape(level, blockPos.above()))) {
+        if(!Block.isShapeFullBlock(level.getBlockState(blockPos.above()).getShape(level, blockPos.above())) && !blockEntity.fluidHandler.isEmpty()) {
             blockEntity.suckInItems(level);
+        }
+        if(level.getGameTime() % 80 == 0) {
+            blockEntity.updateIsHeated();
+        }
+        if(blockEntity.isHeated && !blockEntity.fluidHandler.isEmpty() && level.getGameTime() % 50 == 0) {
+//            double d0 = (level.random.nextDouble() * 2.0D - 1.0D);
+//            double d1 = (level.random.nextDouble() * 2.0D - 1.0D);
+            Vec3 pos = blockPos.getCenter();
+            if(level instanceof ServerLevel serverLevel) {
+                Ritualism.LOGGER.debug("Spawning particles..");
+            }
         }
     }
 }
