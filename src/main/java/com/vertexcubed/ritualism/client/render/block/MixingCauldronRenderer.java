@@ -3,7 +3,6 @@ package com.vertexcubed.ritualism.client.render.block;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import com.vertexcubed.ritualism.Ritualism;
 import com.vertexcubed.ritualism.common.block.MixingCauldronBlock;
 import com.vertexcubed.ritualism.common.blockentity.MixingCauldronBlockEntity;
 import com.vertexcubed.ritualism.common.util.Maath;
@@ -53,7 +52,7 @@ public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldro
 
         IItemHandler handler = be.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
         if(handler == null) {
-            Ritualism.LOGGER.debug("Item cap not synced to client!");
+//            Ritualism.LOGGER.debug("Item cap not synced to client!");
             return;
         }
 
@@ -77,13 +76,21 @@ public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldro
             if(stack.isEmpty()) continue;
             Vector2f newVec = Maath.rotateDegrees(rotVec, i * 60);
             poseStack.pushPose();
+            poseStack.translate(newVec.x, 0.0f, newVec.y);
             float yOffset = randomSin(be.getLevel(), pPartialTick, random, 0.05f);
-            poseStack.translate(newVec.x, yOffset / 8.0f, newVec.y);
+            if(!fluid.isEmpty()) {
+                poseStack.translate(0.0f, yOffset / 8.0f, 0.0f);
+            }
 
             float rotXOffset = randomSin(be.getLevel(), pPartialTick, random, 0.05f);
             float rotZOffset = randomSin(be.getLevel(), pPartialTick, random, 0.025f);
 
-            poseStack.mulPose(Axis.XP.rotationDegrees(90).mul(Axis.ZP.rotationDegrees(i * 60 + (rotZOffset * 10))).mul(Axis.XP.rotationDegrees(-35 + (rotXOffset * 7))));
+            poseStack.mulPose(Axis.XP.rotationDegrees(90).mul(Axis.ZP.rotationDegrees(i * 60)));
+
+            if(!fluid.isEmpty()) {
+                poseStack.mulPose(Axis.ZP.rotationDegrees((rotZOffset * 10)).mul(Axis.XP.rotationDegrees(-35 + (rotXOffset * 7))));
+            }
+
             renderItem(stack, poseStack, pBuffer, be.getLevel(), pPackedLight);
             poseStack.popPose();
         }

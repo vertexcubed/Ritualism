@@ -2,10 +2,8 @@ package com.vertexcubed.ritualism.common.item;
 
 import com.mojang.datafixers.util.Pair;
 import com.vertexcubed.ritualism.Ritualism;
-import com.vertexcubed.ritualism.common.fluid.ItemEmptying;
 import com.vertexcubed.ritualism.common.fluid.ItemFilling;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -13,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public class DebugItem extends Item {
     public DebugItem(Properties pProperties) {

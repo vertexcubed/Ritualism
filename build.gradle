@@ -110,11 +110,17 @@ repositories {
     //mekanism
     maven { url 'https://modmaven.dev/' }
 
-    //jei
+    //jei + lodestone
     maven {
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
+
+//    //Curios maven currently down. Switch to this when it doesn't shit itself.
+//    maven {
+//        name = "Illusive Soulworks maven"
+//        url = "https://maven.theillusivec4.top/"
+//    }
 }
 
 dependencies {
@@ -134,6 +140,14 @@ dependencies {
     runtimeOnly fg.deobf("mekanism:Mekanism:${minecraft_version}-${mekanism_version}:additions")
     runtimeOnly fg.deobf("mekanism:Mekanism:${minecraft_version}-${mekanism_version}:generators")
     runtimeOnly fg.deobf("mekanism:Mekanism:${minecraft_version}-${mekanism_version}:tools")
+
+    //hard dependencies
+    implementation fg.deobf("team.lodestar.lodestone:lodestone:${minecraft_version}-${lodestone_version}")
+
+    implementation fg.deobf("maven.modrinth:curios:${curios_version}+${minecraft_version}")
+
+//    compileOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}+${minecraft_version}:api"))
+//    runtimeOnly(fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}+${minecraft_version}"))
 }
 
 mixin {

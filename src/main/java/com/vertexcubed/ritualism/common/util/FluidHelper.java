@@ -1,10 +1,8 @@
 package com.vertexcubed.ritualism.common.util;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.vertexcubed.ritualism.Ritualism;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;

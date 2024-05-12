@@ -2,14 +2,19 @@ package com.vertexcubed.ritualism.common.blockentity;
 
 import com.vertexcubed.ritualism.Ritualism;
 import com.vertexcubed.ritualism.common.block.MixingCauldronBlock;
+import com.vertexcubed.ritualism.common.recipe.MixingRecipe;
+import com.vertexcubed.ritualism.common.recipe.MixingRecipeWrapper;
 import com.vertexcubed.ritualism.common.registry.BlockRegistry;
+import com.vertexcubed.ritualism.common.registry.RecipeRegistry;
 import com.vertexcubed.ritualism.common.registry.TagRegistry;
 import com.vertexcubed.ritualism.common.util.ItemHelper;
+import com.vertexcubed.ritualism.server.network.PacketRegistry;
+import com.vertexcubed.ritualism.server.network.s2c.S2CMixingCauldronParticlesPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -17,8 +22,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -38,13 +47,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
-public class MixingCauldronBlockEntity extends BlockEntity {
+public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCrafter {
 
 
-    private boolean isHeated;
+    public static final int MAX_CRAFT_TIME = 100;
     private final ItemStackHandler itemHandler = new ItemStackHandler(6) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -58,7 +68,14 @@ public class MixingCauldronBlockEntity extends BlockEntity {
 
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            if(craftingTime > 0) return false;
             return getStackInSlot(slot).isEmpty() || super.isItemValid(slot, stack);
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if(craftingTime > 0) return ItemStack.EMPTY;
+            return super.extractItem(slot, amount, simulate);
         }
     };
 
@@ -72,6 +89,9 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     private LazyOptional<IItemHandler> lazyItemHandler = LazyOptional.empty();
     private LazyOptional<IFluidHandler> lazyFluidHanlder = LazyOptional.empty();
 
+    private boolean isHeated;
+    private int craftingTime = -1;
+    private MixingRecipe currentRecipe;
     public MixingCauldronBlockEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockRegistry.MIXING_CAULDRON_BLOCK_ENTITY.get(), pPos, pBlockState);
     }
@@ -95,6 +115,10 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         List<ItemEntity> items = getItemsAt(level, this);
         for(ItemEntity item : items) {
             if(addItemsFromWorld(level, item)) {
+                if(level instanceof ServerLevel serverLevel) {
+                    Vec3 pos = worldPosition.getCenter();
+                    serverLevel.sendParticles(ParticleTypes.SPLASH, pos.x, pos.y + 0.5, pos.z, serverLevel.random.nextInt(4) + 4, 0.2, 0, 0.2, 1.0);
+                }
                 return true;
             }
         }
@@ -104,7 +128,6 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     private boolean addItemsFromWorld(Level level, ItemEntity item) {
         ItemStack original = item.getItem().copy();
         int slot = ItemHelper.getFirstValidSlot(itemHandler, original);
-        Ritualism.LOGGER.debug("Valid slot: " + slot);
         if(slot == -1) {
             return false;
         }
@@ -121,6 +144,68 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         return true;
     }
 
+    @Override
+    public void activate(Level level, Player player, InteractionHand hand) {
+        if(!level.isClientSide) {
+            craftingTime = 100;
+            setChanged();
+        }
+    }
+
+    @Override
+    public boolean canActivate(Level level, Player player, InteractionHand hand) {
+        for(int i = 0; i < itemHandler.getSlots(); i++) {
+            if(!itemHandler.getStackInSlot(i).isEmpty()) {
+                return isHeated && craftingTime == -1;
+            }
+        }
+        return false;
+    }
+
+    public boolean isCrafting() {
+        return craftingTime > -1;
+    }
+    private void craft(Level level, MixingRecipe recipe) {
+        Ritualism.LOGGER.debug("Crafted! Client: " + level.isClientSide);
+        FluidStack result = recipe.getResult();
+        fluidHandler.setFluid(result);
+        for(int i = 0; i < itemHandler.getSlots(); i++) {
+            itemHandler.setStackInSlot(i, ItemStack.EMPTY);
+        }
+        level.playSound(null, worldPosition, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1.0f, 1.25f);
+        Vec3 center = worldPosition.getCenter();
+
+        PacketRegistry.sendToNearbyClients(level, worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.SUCCESS, worldPosition));
+    }
+    private void failCraft(Level level) {
+        Ritualism.LOGGER.debug("Failed! Client: " + level.isClientSide);
+        fluidHandler.drain(Integer.MAX_VALUE, IFluidHandler.FluidAction.EXECUTE);
+        for(int i = 0; i < itemHandler.getSlots(); i++) {
+            ItemStack stack = itemHandler.getStackInSlot(i);
+            Vec3 center = worldPosition.getCenter();
+            flingItem(level, center.x, center.y + 1.0, center.z, stack);
+        }
+        level.playSound(null, worldPosition, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 0.8f, 1.25f);
+
+        PacketRegistry.sendToNearbyClients(level, worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.FAIL, worldPosition));
+    }
+
+    private void flingItem(Level level, double x, double y, double z, ItemStack stack) {
+        double d0 = EntityType.ITEM.getWidth();
+        double d1 = 1.0D - d0;
+        double d2 = d0 / 2.0D;
+        double d3 = Math.floor(x) + level.random.nextDouble() * d1 + d2;
+        double d4 = Math.floor(y) + level.random.nextDouble() * d1;
+        double d5 = Math.floor(z) + level.random.nextDouble() * d1 + d2;
+
+        while(!stack.isEmpty()) {
+            ItemEntity itementity = new ItemEntity(level, d3, d4, d5, stack.split(level.random.nextInt(21) + 10));
+            float f = 0.05F;
+            itementity.setDeltaMovement(level.random.triangle(0.0D, 0.11485000171139836D), 0.5, level.random.triangle(0.0D, 0.11485000171139836D));
+            level.addFreshEntity(itementity);
+        }
+    }
+
     private static List<ItemEntity> getItemsAt(Level pLevel, MixingCauldronBlockEntity be) {
         return be.getSuckShape()
                 .toAabbs()
@@ -134,10 +219,14 @@ public class MixingCauldronBlockEntity extends BlockEntity {
     }
 
     private void updateIsHeated() {
-        Ritualism.LOGGER.debug("Updating isHeated");
+
         BlockState below = level.getBlockState(worldPosition.below());
+        boolean heatedOld = isHeated;
         isHeated = below.is(TagRegistry.HEAT_SOURCES);
-        setChanged();
+        //only set changed if heat status changes, to prevent unnecessary syncing
+        if(heatedOld != isHeated) {
+            setChanged();
+        }
     }
 
     public boolean isHeated() {
@@ -175,6 +264,7 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         tag.put("inventory", itemHandler.serializeNBT());
         tag.put("fluid", fluidHandler.writeToNBT(new CompoundTag()));
         tag.putBoolean("isHeated", isHeated);
+        tag.putInt("crafting_time", craftingTime);
         super.saveAdditional(tag);
     }
 
@@ -184,6 +274,7 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         itemHandler.deserializeNBT(tag.getCompound("inventory"));
         fluidHandler.readFromNBT(tag.getCompound("fluid"));
         isHeated = tag.getBoolean("isHeated");
+        craftingTime = tag.getInt("crafting_time");
     }
 
     @Override
@@ -203,20 +294,51 @@ public class MixingCauldronBlockEntity extends BlockEntity {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    public static void tick(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity blockEntity) {
-        if(!Block.isShapeFullBlock(level.getBlockState(blockPos.above()).getShape(level, blockPos.above())) && !blockEntity.fluidHandler.isEmpty()) {
-            blockEntity.suckInItems(level);
+    public static void tick(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity be) {
+        if(!be.isHeated) {
+            be.craftingTime = -1;
         }
-        if(level.getGameTime() % 80 == 0) {
-            blockEntity.updateIsHeated();
+        if(be.craftingTime > -1) {
+            be.craftingTime--;
         }
-        if(blockEntity.isHeated && !blockEntity.fluidHandler.isEmpty() && level.getGameTime() % 50 == 0) {
+        if(be.craftingTime == 0) {
+            NonNullList<ItemStack> stacks = NonNullList.withSize(6, ItemStack.EMPTY);
+            for(int i = 0; i < be.itemHandler.getSlots(); i++) {
+                stacks.set(i, be.itemHandler.getStackInSlot(i));
+            }
+            MixingRecipeWrapper wrapper = new MixingRecipeWrapper(stacks, be.fluidHandler.getFluidInTank(0));
+            Optional<MixingRecipe> optional = level.getRecipeManager().getRecipeFor(RecipeRegistry.MIXING_TYPE.get(), wrapper, level);
+            if(optional.isPresent()) {
+                be.craft(level, optional.get());
+                //send craft packet to client
+            }
+            else {
+                be.failCraft(level);
+                //send fail craft packet to client
+            }
+        }
+
+        if(!Block.isShapeFullBlock(level.getBlockState(blockPos.above()).getShape(level, blockPos.above())) && !be.fluidHandler.isEmpty()) {
+            be.suckInItems(level);
+        }
+        be.updateIsHeated();
+        if(be.isHeated && !be.fluidHandler.isEmpty() && level.getGameTime() % 50 == 0) {
 //            double d0 = (level.random.nextDouble() * 2.0D - 1.0D);
 //            double d1 = (level.random.nextDouble() * 2.0D - 1.0D);
             Vec3 pos = blockPos.getCenter();
             if(level instanceof ServerLevel serverLevel) {
-                Ritualism.LOGGER.debug("Spawning particles..");
+
+//                Ritualism.LOGGER.debug("Spawning particles..");
+
             }
+        }
+    }
+    public static void tickClient(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity be) {
+        if(!be.isHeated) {
+            be.craftingTime = -1;
+        }
+        if(be.craftingTime > -1) {
+            be.craftingTime--;
         }
     }
 }

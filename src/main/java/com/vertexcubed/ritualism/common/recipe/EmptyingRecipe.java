@@ -1,6 +1,7 @@
 package com.vertexcubed.ritualism.common.recipe;
 
 import com.google.gson.JsonObject;
+import com.vertexcubed.ritualism.common.registry.RecipeRegistry;
 import com.vertexcubed.ritualism.common.util.FluidHelper;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
@@ -24,6 +25,11 @@ public class EmptyingRecipe implements Recipe<EmptingRecipeWrapper> {
         this.input = input;
         this.result = result;
         this.fluid = fluid;
+    }
+
+    @Override
+    public boolean isSpecial() {
+        return true;
     }
 
     @Override
@@ -62,20 +68,15 @@ public class EmptyingRecipe implements Recipe<EmptingRecipeWrapper> {
 
     @Override
     public RecipeSerializer<?> getSerializer() {
-        return Serializer.INSTANCE;
+        return RecipeRegistry.EMPTYING_SERIALIZER.get();
     }
 
     @Override
     public RecipeType<?> getType() {
-        return Type.INSTANCE;
-    }
-
-    public static class Type implements RecipeType<EmptyingRecipe> {
-        public static final Type INSTANCE = new Type();
+        return RecipeRegistry.EMPTYING_TYPE.get();
     }
 
     public static class Serializer implements RecipeSerializer<EmptyingRecipe> {
-        public static final Serializer INSTANCE = new Serializer();
 
         @Override
         public EmptyingRecipe fromJson(ResourceLocation pRecipeId, JsonObject pSerializedRecipe) {

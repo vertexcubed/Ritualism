@@ -1,6 +1,5 @@
 package com.vertexcubed.ritualism.common.util;
 
-import net.minecraft.util.Mth;
 import org.joml.Vector2f;
 
 import static net.minecraft.util.Mth.*;

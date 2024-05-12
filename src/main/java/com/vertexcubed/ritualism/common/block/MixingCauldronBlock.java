@@ -1,19 +1,16 @@
 package com.vertexcubed.ritualism.common.block;
 
 import com.mojang.datafixers.util.Pair;
-import com.vertexcubed.ritualism.Ritualism;
 import com.vertexcubed.ritualism.common.blockentity.MixingCauldronBlockEntity;
 import com.vertexcubed.ritualism.common.fluid.ItemEmptying;
 import com.vertexcubed.ritualism.common.fluid.ItemFilling;
 import com.vertexcubed.ritualism.common.registry.BlockRegistry;
 import com.vertexcubed.ritualism.common.util.FluidHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -34,9 +31,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 
 public class MixingCauldronBlock extends BaseEntityBlock {
@@ -63,6 +58,9 @@ public class MixingCauldronBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
         if(player.isShiftKeyDown()) {
+            if(((MixingCauldronBlockEntity) be).isCrafting()) {
+                return InteractionResult.PASS;
+            }
             if(player.getItemInHand(hand).isEmpty()) {
                 IItemHandler handler = be.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
                 if(handler == null) {
@@ -81,12 +79,12 @@ public class MixingCauldronBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         }
 
-        Ritualism.LOGGER.debug("Use clicked... client: " + level.isClientSide);
+//        Ritualism.LOGGER.debug("Use clicked... client: " + level.isClientSide);
 
         ItemStack heldItem = player.getItemInHand(hand);
         IFluidHandler tank = be.getCapability(ForgeCapabilities.FLUID_HANDLER).orElse(null);
         if(tank == null) {
-            Ritualism.LOGGER.debug("tank is null, side: " + level.isClientSide);
+//            Ritualism.LOGGER.debug("tank is null, side: " + level.isClientSide);
             return InteractionResult.PASS;
         }
         //If item can't be filled or emptied, pass.
@@ -187,6 +185,6 @@ public class MixingCauldronBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, BlockRegistry.MIXING_CAULDRON_BLOCK_ENTITY.get(), MixingCauldronBlockEntity::tick);
+        return level.isClientSide ? createTickerHelper(type, BlockRegistry.MIXING_CAULDRON_BLOCK_ENTITY.get(), MixingCauldronBlockEntity::tickClient) : createTickerHelper(type, BlockRegistry.MIXING_CAULDRON_BLOCK_ENTITY.get(), MixingCauldronBlockEntity::tick);
     }
 }

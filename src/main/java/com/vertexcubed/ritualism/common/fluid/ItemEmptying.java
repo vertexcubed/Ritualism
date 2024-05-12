@@ -1,7 +1,6 @@
 package com.vertexcubed.ritualism.common.fluid;
 
 import com.mojang.datafixers.util.Pair;
-import com.vertexcubed.ritualism.Ritualism;
 import com.vertexcubed.ritualism.common.recipe.EmptingRecipeWrapper;
 import com.vertexcubed.ritualism.common.recipe.EmptyingRecipe;
 import com.vertexcubed.ritualism.common.registry.RecipeRegistry;

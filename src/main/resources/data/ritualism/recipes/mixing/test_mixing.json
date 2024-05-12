@@ -1,0 +1,31 @@
+{
+    "type": "ritualism:mixing",
+    "ingredients": [
+        {
+            "item": "minecraft:diamond"
+        },
+        {
+            "item": "minecraft:iron_ingot"
+        },
+        {
+            "item": "minecraft:gold_ingot"
+        },
+        {
+            "item": "minecraft:copper_ingot"
+        },
+        {
+            "item": "minecraft:diamond"
+        },
+        {
+            "item": "minecraft:diamond"
+        }
+    ],
+    "fluid": {
+        "fluid": "minecraft:water",
+        "amount": 1000
+    },
+    "result": {
+        "fluid": "minecraft:lava",
+        "amount": 500
+    }
+}
