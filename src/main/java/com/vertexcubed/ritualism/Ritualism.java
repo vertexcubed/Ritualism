@@ -3,12 +3,10 @@ package com.vertexcubed.ritualism;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
-import com.vertexcubed.ritualism.common.registry.BlockRegistry;
-import com.vertexcubed.ritualism.common.registry.ItemRegistry;
-import com.vertexcubed.ritualism.common.registry.RecipeRegistry;
-import com.vertexcubed.ritualism.common.registry.TabRegistry;
+import com.vertexcubed.ritualism.common.registry.*;
 import com.vertexcubed.ritualism.server.network.PacketRegistry;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -33,6 +31,7 @@ public class Ritualism
 
         ItemRegistry.register(modEventBus);
         BlockRegistry.register(modEventBus);
+        FluidRegistry.register(modEventBus);
         modEventBus.addListener(BlockRegistry::registerBlockItems);
         TabRegistry.register(modEventBus);
         RecipeRegistry.register(modEventBus);
@@ -44,6 +43,9 @@ public class Ritualism
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
         PacketRegistry.register();
+        event.enqueueWork(() -> {
+            FluidRegistry.registerDispenserBehavior();
+        });
     }
 
 

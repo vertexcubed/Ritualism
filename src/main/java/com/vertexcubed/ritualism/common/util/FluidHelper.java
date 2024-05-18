@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -19,13 +20,7 @@ public class FluidHelper {
         if(fluid == null) {
             throw new JsonSyntaxException("Unknown fluid: " + id);
         }
-        int amount;
-        if(jsonObject.has("amount")) {
-            amount = GsonHelper.getAsInt(jsonObject, "amount");
-        }
-        else {
-            amount = 1;
-        }
+        int amount = jsonObject.has("amount") ? GsonHelper.getAsInt(jsonObject, "amount") : 1;
 
         FluidStack output = new FluidStack(fluid, amount);
         if(!jsonObject.has("nbt")) {

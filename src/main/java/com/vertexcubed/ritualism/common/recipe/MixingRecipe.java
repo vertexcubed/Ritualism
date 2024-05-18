@@ -28,11 +28,13 @@ public class MixingRecipe implements Recipe<MixingRecipeWrapper> {
     private final NonNullList<Ingredient> ingredients;
     private final FluidStack fluid;
     private final FluidStack result;
-    public MixingRecipe(ResourceLocation id, NonNullList<Ingredient> ingredients, FluidStack fluid, FluidStack result) {
+    private final int fluidConsumed;
+    public MixingRecipe(ResourceLocation id, NonNullList<Ingredient> ingredients, FluidStack fluid, FluidStack result, int fluidConsumed) {
         this.id = id;
         this.ingredients = ingredients;
         this.fluid = fluid;
         this.result = result;
+        this.fluidConsumed = fluidConsumed;
     }
 
     @Override
@@ -74,12 +76,16 @@ public class MixingRecipe implements Recipe<MixingRecipeWrapper> {
         return ingredients;
     }
 
-    public FluidStack getFluid() {
+    public FluidStack getInputFluid() {
         return fluid;
     }
 
-    public FluidStack getResult() {
+    public FluidStack getResultingFluid() {
         return result;
+    }
+
+    public int getFluidConsumed() {
+        return fluidConsumed;
     }
 
     /**
@@ -117,8 +123,8 @@ public class MixingRecipe implements Recipe<MixingRecipeWrapper> {
             }
             FluidStack fluid = FluidHelper.fluidStackFromJson(GsonHelper.getAsJsonObject(pSerializedRecipe, "fluid"));
             FluidStack result = FluidHelper.fluidStackFromJson(GsonHelper.getAsJsonObject(pSerializedRecipe, "result"));
-
-            return new MixingRecipe(pRecipeId, ingredients, fluid, result);
+            int fluidConsumed = pSerializedRecipe.has("fluidConsumed") ? GsonHelper.getAsInt(pSerializedRecipe, "fluidConsumed") : 0;
+            return new MixingRecipe(pRecipeId, ingredients, fluid, result, fluidConsumed);
         }
 
         @Override
@@ -129,7 +135,8 @@ public class MixingRecipe implements Recipe<MixingRecipeWrapper> {
             }
             FluidStack fluid = FluidStack.readFromPacket(buf);
             FluidStack result = FluidStack.readFromPacket(buf);
-            return new MixingRecipe(pRecipeId, ingredients, fluid, result);
+            int fluidConsumed = buf.readVarInt();
+            return new MixingRecipe(pRecipeId, ingredients, fluid, result, fluidConsumed);
         }
 
         @Override
@@ -139,6 +146,7 @@ public class MixingRecipe implements Recipe<MixingRecipeWrapper> {
             });
             pRecipe.fluid.writeToPacket(buf);
             pRecipe.result.writeToPacket(buf);
+            buf.writeVarInt(pRecipe.fluidConsumed);
         }
     }
 }

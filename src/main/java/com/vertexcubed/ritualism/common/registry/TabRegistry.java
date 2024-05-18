@@ -19,7 +19,9 @@ public class TabRegistry {
                     .icon(() -> new ItemStack(Items.BARRIER))
                     .displayItems((parameters, output) -> {
                         ItemRegistry.ITEMS.getEntries().forEach(item -> output.accept(item.get()));
+                        FluidRegistry.FLUIDS.getEntries().forEach(fluid -> output.accept(fluid.bucket()));
                         BlockRegistry.BLOCKS.getEntries().forEach(block -> output.accept(block.get().asItem()));
+
                     }).build());
 
     public static void register(IEventBus eventBus) {

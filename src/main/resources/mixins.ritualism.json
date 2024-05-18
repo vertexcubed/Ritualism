@@ -3,7 +3,7 @@
     "package": "com.vertexcubed.ritualism.mixin",
     "compatibilityLevel": "JAVA_17",
     "mixins": [
-
+        "MapColorAccessor"
     ],
     "injectors": {
         "defaultRequire": 1

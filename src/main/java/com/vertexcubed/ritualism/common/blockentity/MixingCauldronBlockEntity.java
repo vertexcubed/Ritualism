@@ -27,7 +27,6 @@ import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -91,7 +90,6 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
 
     private boolean isHeated;
     private int craftingTime = -1;
-    private MixingRecipe currentRecipe;
     public MixingCauldronBlockEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockRegistry.MIXING_CAULDRON_BLOCK_ENTITY.get(), pPos, pBlockState);
     }
@@ -167,16 +165,12 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
     }
     private void craft(Level level, MixingRecipe recipe) {
         Ritualism.LOGGER.debug("Crafted! Client: " + level.isClientSide);
-        FluidStack result = recipe.getResult();
-        fluidHandler.setFluid(result);
+        FluidStack result = recipe.getResultingFluid();
+        FluidStack old = fluidHandler.getFluidInTank(0);
+        fluidHandler.setFluid(new FluidStack(result.getFluid(), old.getAmount() - recipe.getFluidConsumed()));
         for(int i = 0; i < itemHandler.getSlots(); i++) {
             itemHandler.setStackInSlot(i, ItemStack.EMPTY);
-        }
-        level.playSound(null, worldPosition, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1.0f, 1.25f);
-        Vec3 center = worldPosition.getCenter();
-
-        PacketRegistry.sendToNearbyClients(level, worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.SUCCESS, worldPosition));
-    }
+        }}
     private void failCraft(Level level) {
         Ritualism.LOGGER.debug("Failed! Client: " + level.isClientSide);
         fluidHandler.drain(Integer.MAX_VALUE, IFluidHandler.FluidAction.EXECUTE);
@@ -185,9 +179,6 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
             Vec3 center = worldPosition.getCenter();
             flingItem(level, center.x, center.y + 1.0, center.z, stack);
         }
-        level.playSound(null, worldPosition, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 0.8f, 1.25f);
-
-        PacketRegistry.sendToNearbyClients(level, worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.FAIL, worldPosition));
     }
 
     private void flingItem(Level level, double x, double y, double z, ItemStack stack) {
@@ -212,6 +203,19 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
                 .stream()
                 .flatMap((aabb) -> pLevel.getEntitiesOfClass(ItemEntity.class, aabb.move(be.worldPosition.getX(), be.worldPosition.getY(), be.worldPosition.getZ()), EntitySelector.ENTITY_STILL_ALIVE).stream())
                 .collect(Collectors.toList());
+    }
+
+    private void spawnBoilingParticles(Level level) {
+        if(isHeated && !fluidHandler.isEmpty() && level.getGameTime() % 50 == 0) {
+//            double d0 = (level.random.nextDouble() * 2.0D - 1.0D);
+//            double d1 = (level.random.nextDouble() * 2.0D - 1.0D);
+            Vec3 pos = worldPosition.getCenter();
+            if(level instanceof ServerLevel serverLevel) {
+
+//                Ritualism.LOGGER.debug("Spawning particles..");
+
+            }
+        }
     }
 
     public void dropContents() {
@@ -298,9 +302,12 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
         if(!be.isHeated) {
             be.craftingTime = -1;
         }
+
         if(be.craftingTime > -1) {
             be.craftingTime--;
         }
+
+
         if(be.craftingTime == 0) {
             NonNullList<ItemStack> stacks = NonNullList.withSize(6, ItemStack.EMPTY);
             for(int i = 0; i < be.itemHandler.getSlots(); i++) {
@@ -310,28 +317,27 @@ public class MixingCauldronBlockEntity extends BlockEntity implements ArcaneCraf
             Optional<MixingRecipe> optional = level.getRecipeManager().getRecipeFor(RecipeRegistry.MIXING_TYPE.get(), wrapper, level);
             if(optional.isPresent()) {
                 be.craft(level, optional.get());
-                //send craft packet to client
+
+                level.playSound(null, be.worldPosition, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1.0f, 1.25f);
+                PacketRegistry.sendToNearbyClients(level, be.worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.SUCCESS, be.worldPosition));
             }
             else {
                 be.failCraft(level);
-                //send fail craft packet to client
+
+                level.playSound(null, be.worldPosition, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 0.8f, 1.25f);
+                PacketRegistry.sendToNearbyClients(level, be.worldPosition, new S2CMixingCauldronParticlesPacket(S2CMixingCauldronParticlesPacket.OpCode.FAIL, be.worldPosition));
             }
         }
 
         if(!Block.isShapeFullBlock(level.getBlockState(blockPos.above()).getShape(level, blockPos.above())) && !be.fluidHandler.isEmpty()) {
             be.suckInItems(level);
         }
+
+
         be.updateIsHeated();
-        if(be.isHeated && !be.fluidHandler.isEmpty() && level.getGameTime() % 50 == 0) {
-//            double d0 = (level.random.nextDouble() * 2.0D - 1.0D);
-//            double d1 = (level.random.nextDouble() * 2.0D - 1.0D);
-            Vec3 pos = blockPos.getCenter();
-            if(level instanceof ServerLevel serverLevel) {
 
-//                Ritualism.LOGGER.debug("Spawning particles..");
+        be.spawnBoilingParticles(level);
 
-            }
-        }
     }
     public static void tickClient(Level level, BlockPos blockPos, BlockState blockState, MixingCauldronBlockEntity be) {
         if(!be.isHeated) {

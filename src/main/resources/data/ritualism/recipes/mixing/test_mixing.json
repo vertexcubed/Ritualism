@@ -25,7 +25,7 @@
         "amount": 1000
     },
     "result": {
-        "fluid": "minecraft:lava",
-        "amount": 500
-    }
+        "fluid": "minecraft:lava"
+    },
+    "fluidConsumed": 500
 }
