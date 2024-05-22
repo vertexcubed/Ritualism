@@ -1,0 +1,25 @@
+{
+    "pattern": [
+        [
+            "     ",
+            " IGI ",
+            " G0G ",
+            " IGI ",
+            "     "
+        ]
+    ],
+    "mappings": {
+        "I": {
+            "type": "ritualism:block",
+            "block": "minecraft:iron_block"
+        },
+        "G": {
+            "type": "ritualism:block",
+            "block": "minecraft:gold_block"
+        },
+        "0": {
+            "type": "ritualism:block",
+            "block": "minecraft:diamond_block"
+        }
+    }
+}

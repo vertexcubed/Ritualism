@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.vertexcubed.ritualism.common.block.MixingCauldronBlock;
 import com.vertexcubed.ritualism.common.blockentity.MixingCauldronBlockEntity;
+import com.vertexcubed.ritualism.common.util.Color;
 import com.vertexcubed.ritualism.common.util.Maath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
@@ -29,7 +30,6 @@ import net.minecraftforge.items.IItemHandler;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
-import java.awt.*;
 
 public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldronBlockEntity> {
 
@@ -110,22 +110,15 @@ public class MixingCauldronRenderer implements BlockEntityRenderer<MixingCauldro
         IClientFluidTypeExtensions fluidExtensions = IClientFluidTypeExtensions.of(fluid.getFluid());
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(fluidExtensions.getStillTexture());
         //colors are argb
-        int color = fluidExtensions.getTintColor();
-        float alpha = (color >> 24 & 255) / 255f;
-        float red = (color >> 16 & 255) / 255f;
-        float green = (color >> 8 & 255) / 255f;
-        float blue = (color & 255) / 255f;
 
+        Color color = Color.packedInt(fluidExtensions.getTintColor());
 
-        Color waterColor = new Color(BiomeColors.getAverageWaterColor(be.getLevel(), be.getBlockPos()));
         //if fluid is water, use biome water color
         if(be.getFluid().getFluid().isSame(Fluids.WATER)) {
-            red = waterColor.getRed()/255f;
-            green = waterColor.getGreen()/255f;
-            blue = waterColor.getBlue()/255f;
+            color = Color.packedInt(BiomeColors.getAverageWaterColor(be.getLevel(), be.getBlockPos())).setA(color.a());
         }
 
-        renderFluidQuad(poseStack.last().pose(), con, sprite, red, green, blue, alpha, percent, packedLight);
+        renderFluidQuad(poseStack.last().pose(), con, sprite, color.rf(), color.gf(), color.bf(), color.af(), percent, packedLight);
     }
 
     private void renderFluidQuad(Matrix4f matrix, VertexConsumer con, TextureAtlasSprite sprite, float r, float g, float b, float alpha, float percent, int packedLight){

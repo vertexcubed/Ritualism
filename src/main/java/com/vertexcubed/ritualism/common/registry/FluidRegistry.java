@@ -25,7 +25,8 @@ public class FluidRegistry {
     public static final FluidRegistryObject<RitualismFluidType, ForgeFlowingFluid.Source, ForgeFlowingFluid.Flowing, LiquidBlock, BucketItem>
             SECOND_TEST = registerWaterLike(new ResourceLocation(Ritualism.MOD_ID, "second_test"), 0x7f0bfc03,true, true);
 
-    private static FluidRegistryObject<RitualismFluidType, ForgeFlowingFluid.Source, ForgeFlowingFluid.Flowing, LiquidBlock, BucketItem> registerWaterLike(ResourceLocation name, int tintColor, boolean canConvertToSource, boolean canHydrate) {
+    private static FluidRegistryObject<RitualismFluidType, ForgeFlowingFluid.Source, ForgeFlowingFluid.Flowing, LiquidBlock, BucketItem>
+    registerWaterLike(ResourceLocation name, int tintColor, boolean canConvertToSource, boolean canHydrate) {
         FluidType.Properties prop = FluidType.Properties.create()
                 .descriptionId("block." + name.getNamespace() + "." + name.getPath())
                 .fallDistanceModifier(0F)
